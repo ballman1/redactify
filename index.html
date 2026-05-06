@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LegalRedact — Secure Document Intake</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0f0e0d;--ink2:#3a3835;--ink3:#7a7672;
+  --surface:#f7f4f0;--paper:#fdfcfb;
+  --border:#e0dbd4;--border2:#ccc5bc;
+  --accent:#b5451b;--accent-light:#f5e8e3;
+  --accent2:#1b5eb5;--accent2-light:#e3ecf5;
+  --warn:#a07800;--warn-light:#fdf5dc;
+  --success:#1a6b3a;--success-light:#e3f5ea;
+  --tag-person:#7c2d12;--tag-person-bg:#fff1ec;
+  --tag-org:#1a3a6b;--tag-org-bg:#ecf0ff;
+  --tag-email:#1e3a5f;--tag-email-bg:#ecf3ff;
+  --tag-phone:#3b1f6b;--tag-phone-bg:#f3ecff;
+  --tag-ssn:#6b1f1f;--tag-ssn-bg:#ffecec;
+  --tag-ein:#1f4d6b;--tag-ein-bg:#ecf8ff;
+  --tag-cc:#6b4a1f;--tag-cc-bg:#fff8ec;
+  --tag-address:#1f6b3e;--tag-address-bg:#ecffef;
+  --tag-date:#4a6b1f;--tag-date-bg:#f4ffec;
+  --tag-case:#6b1f5a;--tag-case-bg:#ffecfb;
+  --tag-url:#1f5a6b;--tag-url-bg:#ecfbff;
+  --tag-amount:#5a6b1f;--tag-amount-bg:#f9ffec;
+  --tag-ip:#6b5a1f;--tag-ip-bg:#fffbec;
+  --tag-lawfirm:#3d1f6b;--tag-lawfirm-bg:#f0ecff;
+  --tag-attorney:#5a1f6b;--tag-attorney-bg:#fbecff;
+  --tag-court:#1f3d6b;--tag-court-bg:#ecf5ff;
+  --tag-policy:#6b3d1f;--tag-policy-bg:#fff5ec;
+  --tag-custom:#2d5a1f;--tag-custom-bg:#edfae8;
+  --radius:6px;--radius-lg:10px;
+}
+body{font-family:'Instrument Sans',sans-serif;background:var(--surface);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.5}
+.header{background:var(--paper);border-bottom:1px solid var(--border);padding:13px 26px;display:flex;align-items:center;gap:13px;position:sticky;top:0;z-index:200}
+.logo{font-family:'DM Serif Display',serif;font-size:20px;color:var(--ink);letter-spacing:-.3px}
+.logo span{color:var(--accent)}
+.header-badge{background:var(--accent2-light);color:var(--accent2);font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:.5px;text-transform:uppercase}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink3)}
+.privacy-dot{width:7px;height:7px;border-radius:50%;background:var(--success)}
+.pipe-steps{display:flex;align-items:center}
+.pipe-step{padding:3px 9px;border:1px solid var(--border);background:var(--surface);color:var(--ink3);white-space:nowrap;font-size:10px;font-weight:600;letter-spacing:.3px}
+.pipe-step:first-child{border-radius:4px 0 0 4px}
+.pipe-step:last-child{border-radius:0 4px 4px 0}
+.pipe-step+.pipe-step{border-left:none}
+.pipe-step.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pipe-step.done{background:var(--success-light);color:var(--success);border-color:var(--success)}
+.main{display:flex;height:calc(100vh - 91px)}
+.left-panel{width:340px;min-width:260px;background:var(--paper);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.panel-section{padding:15px 17px;border-bottom:1px solid var(--border)}
+.panel-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:9px}
+.left-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.left-tab{flex:1;padding:8px 0;font-size:10px;font-weight:600;text-align:center;cursor:pointer;color:var(--ink3);border-bottom:2px solid transparent;transition:all .15s;letter-spacing:.4px;text-transform:uppercase;user-select:none}
+.left-tab.active{color:var(--ink);border-bottom-color:var(--accent)}
+.left-tab-panel{display:none;flex:1;overflow-y:auto;flex-direction:column}
+.left-tab-panel.active{display:flex}
+.drop-zone{border:1.5px dashed var(--border2);border-radius:var(--radius-lg);padding:20px 13px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface);position:relative}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:var(--accent-light)}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-icon{font-size:22px;margin-bottom:5px;opacity:.4}
+.drop-title{font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:3px}
+.drop-sub{font-size:11px;color:var(--ink3)}
+.file-types{display:flex;gap:4px;justify-content:center;margin-top:7px;flex-wrap:wrap}
+.file-tag{font-family:'DM Mono',monospace;font-size:9px;padding:2px 6px;border-radius:3px;background:var(--paper);border:1px solid var(--border);color:var(--ink3)}
+.status-card{background:var(--surface);border-radius:var(--radius);padding:9px 11px;margin-top:7px}
+.status-row{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink2);padding:2px 0}
+.status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot-idle{background:var(--border2)}
+.dot-running{background:var(--warn);animation:pulse 1s ease-in-out infinite}
+.dot-done{background:var(--success)}
+.dot-error{background:var(--accent)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.progress-bar{height:2px;background:var(--border);border-radius:2px;margin:4px 0;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent2);border-radius:2px;transition:width .3s ease}
+.detection-list{overflow-y:auto;flex:1}
+.detection-group{border-bottom:1px solid var(--border)}
+.detection-group-header{padding:8px 17px;display:flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;font-weight:500;user-select:none;transition:background .15s}
+.detection-group-header:hover{background:var(--surface)}
+.detection-count{margin-left:auto;font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3)}
+.detection-items{padding:0 17px 7px;display:none;flex-direction:column;gap:3px}
+.detection-items.open{display:flex}
+.detection-item{background:var(--surface);border-radius:var(--radius);padding:5px 8px;font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer;transition:all .15s;border:1px solid transparent}
+.detection-item:hover{border-color:var(--border2);background:var(--paper)}
+.detection-item.accepted{opacity:.45;text-decoration:line-through}
+.detection-item.rejected{opacity:.3}
+.detection-text{font-family:'DM Mono',monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
+.detection-source{font-size:9px;padding:1px 4px;border-radius:3px;flex-shrink:0;font-weight:600;letter-spacing:.2px;font-family:'DM Mono',monospace}
+.detection-actions{display:flex;gap:2px;flex-shrink:0}
+.det-btn{width:17px;height:17px;border-radius:3px;border:1px solid var(--border);background:var(--paper);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .15s}
+.det-btn.accept-btn:hover{background:var(--success-light);border-color:var(--success)}
+.det-btn.reject-btn:hover{background:var(--accent-light);border-color:var(--accent)}
+.det-btn.label-btn:hover{background:var(--accent2-light);border-color:var(--accent2)}
+.det-conf{font-size:9px;font-family:'DM Mono',monospace;flex-shrink:0;min-width:22px;text-align:right}
+.type-badge{font-size:9px;font-weight:600;padding:1px 4px;border-radius:3px;text-transform:uppercase;letter-spacing:.2px;flex-shrink:0;font-family:'DM Mono',monospace}
+.bulk-bar{padding:7px 17px;background:var(--surface);border-bottom:1px solid var(--border);display:none;gap:6px;align-items:center}
+.bulk-bar.visible{display:flex}
+.btn-xs{padding:4px 9px;border-radius:var(--radius);border:1px solid var(--border);background:var(--paper);font-family:'Instrument Sans',sans-serif;font-size:10px;font-weight:500;cursor:pointer;transition:all .15s;color:var(--ink2)}
+.btn-xs:hover{background:var(--surface);border-color:var(--border2)}
+.dict-wrap{padding:12px 17px;flex:1;overflow-y:auto}
+.dict-add-row{display:flex;gap:5px;margin-bottom:10px}
+.dict-input{flex:1;padding:6px 9px;border:1px solid var(--border);border-radius:var(--radius);font-family:'Instrument Sans',sans-serif;font-size:11px;background:var(--paper);color:var(--ink);outline:none}
+.dict-input:focus{border-color:var(--accent2)}
+.dict-select{padding:6px 7px;border:1px solid var(--border);border-radius:var(--radius);font-family:'Instrument Sans',sans-serif;font-size:10px;background:var(--paper);color:var(--ink);outline:none;cursor:pointer}
+.dict-list-wrap{display:flex;flex-direction:column;gap:4px}
+.dict-empty{font-size:11px;color:var(--ink3);text-align:center;padding:20px 0}
+.dict-item{display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border)}
+.dict-item-text{flex:1;font-family:'DM Mono',monospace;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink2)}
+.dict-del{width:15px;height:15px;border:none;background:none;cursor:pointer;color:var(--ink3);font-size:11px;display:flex;align-items:center;justify-content:center;border-radius:3px}
+.dict-del:hover{background:var(--accent-light);color:var(--accent)}
+.right-panel{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.doc-toolbar{background:var(--paper);border-bottom:1px solid var(--border);padding:9px 17px;display:flex;align-items:center;gap:9px}
+.doc-filename{font-size:12px;font-weight:500;color:var(--ink2);font-family:'DM Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px}
+.toolbar-actions{margin-left:auto;display:flex;gap:6px}
+.btn{padding:5px 13px;border-radius:var(--radius);border:1px solid var(--border);background:var(--paper);font-family:'Instrument Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;color:var(--ink2);display:flex;align-items:center;gap:5px}
+.btn:hover{background:var(--surface);border-color:var(--border2)}
+.btn-primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn-primary:hover{background:var(--ink2)}
+.btn-panic{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-panic:hover{background:#9a3815}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.doc-content-wrap{flex:1;overflow-y:auto;padding:26px;background:var(--surface)}
+.doc-paper{max-width:760px;margin:0 auto;background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-lg);padding:38px 44px;min-height:600px;font-family:'Instrument Sans',sans-serif;font-size:13.5px;line-height:1.8;color:var(--ink);white-space:pre-wrap;word-break:break-word;position:relative}
+mark.redact-mark{border-radius:3px;padding:1px 2px;cursor:pointer;transition:all .15s;border:1px solid transparent;position:relative}
+mark.redact-mark:hover{filter:brightness(.88)}
+mark.redact-mark.accepted{background:#1a1a1a !important;color:transparent !important;border-color:#111;user-select:none}
+mark.redact-mark.rejected{background:transparent !important;border-color:var(--border2);text-decoration:line-through;color:var(--ink3)}
+.landing{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px}
+.landing-icon{font-size:42px;margin-bottom:16px;opacity:.2}
+.landing-title{font-family:'DM Serif Display',serif;font-size:25px;color:var(--ink);margin-bottom:9px;letter-spacing:-.3px}
+.landing-sub{font-size:13px;color:var(--ink3);max-width:340px;line-height:1.6}
+.privacy-note{margin-top:18px;background:var(--success-light);color:var(--success);font-size:11px;padding:7px 14px;border-radius:20px;display:inline-flex;align-items:center;gap:6px}
+.warn-banner{background:var(--warn-light);border-top:1px solid #e0c040;padding:9px 17px;display:none;align-items:center;gap:8px;font-size:11px;color:var(--warn)}
+.warn-banner.visible{display:flex}
+.save-panel{background:var(--paper);border-top:1px solid var(--border);padding:11px 17px;display:none;align-items:center;gap:9px}
+.save-panel.visible{display:flex}
+.save-stats{font-size:11px;color:var(--ink3);flex:1}
+.save-stats strong{color:var(--ink)}
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,14,13,.55);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-backdrop.open{display:flex}
+.modal{background:var(--paper);border-radius:12px;border:1px solid var(--border);width:540px;max-width:100%;max-height:80vh;overflow-y:auto;padding:26px 28px}
+.modal-title{font-family:'DM Serif Display',serif;font-size:19px;margin-bottom:16px;color:var(--ink)}
+.audit-section-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin:14px 0 6px;padding-top:10px;border-top:1px solid var(--border)}
+.audit-row{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);gap:12px}
+.audit-key{color:var(--ink3);font-family:'DM Mono',monospace;font-size:10px;white-space:nowrap}
+.audit-val{color:var(--ink);font-weight:500;font-family:'DM Mono',monospace;font-size:10px;text-align:right;word-break:break-all}
+.modal-actions{display:flex;gap:7px;margin-top:18px;justify-content:flex-end}
+.label-popover{position:fixed;background:var(--paper);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:11px 13px;z-index:400;box-shadow:0 4px 20px rgba(0,0,0,.13);width:210px;display:none}
+.label-popover.open{display:block}
+.label-popover-title{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:7px}
+.label-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:7px}
+.label-opt{padding:4px 6px;border-radius:4px;border:1px solid var(--border);font-size:10px;font-family:'DM Mono',monospace;cursor:pointer;text-align:center;transition:all .15s;background:var(--surface);color:var(--ink2)}
+.label-opt:hover,.label-opt.selected{background:var(--ink);color:#fff;border-color:var(--ink)}
+.label-custom-row{display:flex;gap:4px}
+.label-custom-input{flex:1;padding:4px 7px;border:1px solid var(--border);border-radius:4px;font-family:'DM Mono',monospace;font-size:10px;background:var(--paper);color:var(--ink);outline:none}
+.label-custom-input:focus{border-color:var(--accent2)}
+.spinner{width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay{position:absolute;inset:0;background:rgba(247,244,240,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;border-radius:var(--radius-lg);z-index:10}
+.loading-msg{font-size:11px;color:var(--ink3);font-family:'DM Mono',monospace}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── SPRINT 3: SUBMISSION + HISTORY ── */
+.history-wrap{padding:12px 17px;flex:1;overflow-y:auto}
+.history-empty{font-size:11px;color:var(--ink3);text-align:center;padding:28px 0;line-height:1.6}
+.history-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.history-item:hover{border-color:var(--border2);background:var(--paper)}
+.history-item-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.history-confirm{font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--ink);flex:1}
+.history-status{font-size:9px;padding:2px 7px;border-radius:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.status-received{background:var(--accent2-light);color:var(--accent2)}
+.history-meta{font-size:10px;color:var(--ink3);display:flex;gap:10px;flex-wrap:wrap}
+.rbac-bar{background:var(--ink);color:#fff;padding:8px 26px;font-size:11px;display:flex;align-items:center;gap:12px}
+.rbac-role{font-family:'DM Mono',monospace;background:rgba(255,255,255,.12);padding:2px 9px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.3px}
+.rbac-sep{opacity:.3}
+.rbac-link{color:rgba(255,255,255,.7);cursor:pointer;text-decoration:underline;font-size:11px}
+.rbac-link:hover{color:#fff}
+.intake-dashboard{position:fixed;inset:0;background:var(--surface);z-index:600;display:none;flex-direction:column;overflow:hidden}
+.intake-dashboard.open{display:flex}
+.intake-header{background:var(--paper);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;gap:14px}
+.intake-title{font-family:'DM Serif Display',serif;font-size:18px;color:var(--ink)}
+.intake-close{margin-left:auto;cursor:pointer;font-size:20px;color:var(--ink3);border:none;background:none;padding:4px 8px;border-radius:var(--radius)}
+.intake-close:hover{background:var(--surface)}
+.intake-body{flex:1;overflow-y:auto;padding:24px 28px}
+.intake-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:24px}
+.intake-card{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px}
+.intake-card-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
+.intake-card-val{font-size:24px;font-weight:600;font-family:'DM Mono',monospace;color:var(--ink)}
+.intake-table{width:100%;border-collapse:collapse;font-size:12px}
+.intake-table th{text-align:left;padding:8px 12px;border-bottom:2px solid var(--border);font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--ink3)}
+.intake-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+.intake-table tr:hover td{background:var(--surface)}
+.intake-queue-badge{display:inline-block;font-size:9px;padding:2px 8px;border-radius:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.q-personal-injury{background:#fff1ec;color:#7c2d12}
+.q-contract-dispute{background:#ecf0ff;color:#1a3a6b}
+.q-employment{background:#f3ecff;color:#3b1f6b}
+.q-property{background:#ecffef;color:#1f6b3e}
+.q-consumer-fraud{background:#ffecec;color:#6b1f1f}
+.q-general-civil{background:var(--surface);color:var(--ink3)}
+.submit-progress-overlay{position:fixed;inset:0;background:rgba(15,14,13,.6);z-index:700;display:none;align-items:center;justify-content:center}
+.submit-progress-overlay.open{display:flex}
+.submit-progress-card{background:var(--paper);border-radius:12px;border:1px solid var(--border);padding:32px 36px;text-align:center;min-width:320px}
+.submit-progress-title{font-family:'DM Serif Display',serif;font-size:18px;color:var(--ink);margin-bottom:6px}
+.submit-progress-sub{font-size:12px;color:var(--ink3);margin-bottom:20px}
+.submit-steps{display:flex;flex-direction:column;gap:6px;text-align:left;margin-bottom:20px}
+.submit-step{display:flex;align-items:center;gap:10px;font-size:12px;padding:6px 10px;border-radius:var(--radius)}
+.submit-step.active{background:var(--surface)}
+.submit-step-icon{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+.ss-pending{background:var(--border);color:var(--ink3)}
+.ss-running{background:var(--warn);color:#fff;animation:pulse .8s infinite}
+.ss-done{background:var(--success);color:#fff}
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">Legal<span>Redact</span></div>
+  <div class="header-badge">Sprint 3 — Submission · RBAC · Confirmation</div>
+  <div class="pipe-steps">
+    <div class="pipe-step done" id="pipe-extract">1 Extract</div>
+    <div class="pipe-step done" id="pipe-regex">2 Regex</div>
+    <div class="pipe-step active" id="pipe-ner">3 NER</div>
+    <div class="pipe-step" id="pipe-dict">4 Dictionary</div>
+    <div class="pipe-step" id="pipe-review">5 Review</div>
+    <div class="pipe-step" id="pipe-output">6 Output</div>
+  </div>
+  <div class="header-right">
+    <div class="privacy-dot"></div>
+    Original never leaves your browser
+  </div>
+</div>
+
+<div class="main">
+  <div class="left-panel">
+    <div class="panel-section">
+      <div class="panel-label">Document</div>
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept=".txt,.pdf,.docx">
+        <div class="drop-icon">&#128196;</div>
+        <div class="drop-title">Drop document here</div>
+        <div class="drop-sub">or click to browse</div>
+        <div class="file-types">
+          <span class="file-tag">.txt</span>
+          <span class="file-tag">.docx</span>
+          <span class="file-tag">.pdf</span>
+          <span class="file-tag">images</span>
+        </div>
+      </div>
+      <div class="status-card" id="statusCard" style="display:none">
+        <div class="status-row"><div class="status-dot dot-idle" id="dot-extract"></div><span id="status-extract">Text extraction</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="progress-extract" style="width:0%"></div></div>
+        <div class="status-row"><div class="status-dot dot-idle" id="dot-regex"></div><span id="status-regex">Regex layer</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="progress-regex" style="width:0%"></div></div>
+        <div class="status-row"><div class="status-dot dot-idle" id="dot-ner"></div><span id="status-ner">NER (compromise.js)</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="progress-ner" style="width:0%"></div></div>
+        <div class="status-row"><div class="status-dot dot-idle" id="dot-dict"></div><span id="status-dict">Custom dictionary</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="progress-dict" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="left-tabs">
+      <div class="left-tab active" id="tab-detections" onclick="switchTab('detections')">Detections</div>
+      <div class="left-tab" id="tab-dictionary" onclick="switchTab('dictionary')">Dictionary</div>
+      <div class="left-tab" id="tab-history" onclick="switchTab('history')">History</div>
+    </div>
+
+    <div class="left-tab-panel active" id="panel-detections">
+      <div class="bulk-bar" id="bulkBar">
+        <button class="btn-xs" onclick="acceptAll()">&#10003; Accept all</button>
+        <button class="btn-xs" onclick="rejectAll()">&#10005; Reject all</button>
+        <button class="btn-xs" onclick="acceptByLayer('ner')" title="Accept only NER detections">NER only</button>
+        <span id="bulk-count" style="font-size:10px;color:var(--ink3);margin-left:auto"></span>
+      </div>
+      <div class="detection-list" id="detectionList">
+        <div style="padding:28px 17px;text-align:center;color:var(--ink3);font-size:11px">Upload a document to begin scanning</div>
+      </div>
+    </div>
+
+    <div class="left-tab-panel" id="panel-dictionary">
+      <div class="dict-wrap">
+        <div class="panel-label">Custom redaction terms</div>
+        <p style="font-size:11px;color:var(--ink3);margin-bottom:12px;line-height:1.5">Add company names, employee names, client names, or any term specific to this matter. The scanner will flag exact and case-insensitive matches.</p>
+        <div class="dict-add-row">
+          <input class="dict-input" id="dictTermInput" placeholder="Term or phrase to redact" onkeydown="if(event.key==='Enter')addDictTerm()">
+          <select class="dict-select" id="dictLabelSelect">
+            <option value="[CUSTOM]">[CUSTOM]</option>
+            <option value="[BUSINESS]">[BUSINESS]</option>
+            <option value="[EMPLOYEE]">[EMPLOYEE]</option>
+            <option value="[CLIENT]">[CLIENT]</option>
+            <option value="[VENDOR]">[VENDOR]</option>
+            <option value="[ATTORNEY]">[ATTORNEY]</option>
+            <option value="[LAW FIRM]">[LAW FIRM]</option>
+            <option value="[PERSON]">[PERSON]</option>
+          </select>
+          <button class="btn-xs" style="flex-shrink:0" onclick="addDictTerm()">Add</button>
+        </div>
+        <div class="panel-label" style="margin-top:4px">Active terms (<span id="dictCount">0</span>)</div>
+        <div class="dict-list-wrap" id="dictList">
+          <div class="dict-empty" id="dictEmpty">No custom terms yet</div>
+        </div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+          <div class="panel-label">Legal boilerplate detection</div>
+          <p style="font-size:11px;color:var(--ink3);margin-bottom:10px;line-height:1.5">These legal-specific patterns are always active in Sprint 2.</p>
+          <div id="legalPatternList" style="display:flex;flex-direction:column;gap:3px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div class="left-tab-panel" id="panel-history">
+      <div class="history-wrap">
+        <div class="panel-label">Submission history <span id="historyCount" style="font-weight:400;color:var(--ink3)">(this session)</span></div>
+        <div class="history-empty" id="historyEmpty">No submissions this session.<br>Documents you submit will appear here.</div>
+        <div id="historyList"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="doc-toolbar" id="docToolbar" style="display:none">
+      <div class="doc-filename" id="docFilename">&#8212;</div>
+      <div style="font-size:11px;color:var(--ink3);display:flex;gap:8px" id="detectionBadges"></div>
+      <div class="toolbar-actions">
+        <button class="btn" onclick="showAuditModal()">Audit record</button>
+        <button class="btn btn-panic" onclick="panicRedact()">&#9888; Redact everything</button>
+        <button class="btn btn-primary" id="saveBtn" onclick="presaveScan()" disabled>Save redacted version &#8594;</button>
+      </div>
+    </div>
+
+    <div id="landingView" class="landing">
+      <div class="landing-icon">&#128274;</div>
+      <div class="landing-title">Secure legal document intake</div>
+      <div class="landing-sub">Upload a lawsuit, demand letter, or legal notice. Three detection layers run entirely in your browser.</div>
+      <div class="privacy-note"><span>&#128737;</span> Local-first &middot; Original stays in your browser</div>
+      <div style="margin-top:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <div style="background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:11px;max-width:140px;text-align:center">
+          <div style="font-size:18px;margin-bottom:6px">&#128270;</div>
+          <strong style="display:block;margin-bottom:3px">Regex</strong>
+          <span style="color:var(--ink3)">SSN, EIN, phone, email, CC, IP, dates, amounts</span>
+        </div>
+        <div style="background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:11px;max-width:140px;text-align:center">
+          <div style="font-size:18px;margin-bottom:6px">&#129504;</div>
+          <strong style="display:block;margin-bottom:3px">NER</strong>
+          <span style="color:var(--ink3)">People, orgs, places via compromise.js</span>
+        </div>
+        <div style="background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:11px;max-width:140px;text-align:center">
+          <div style="font-size:18px;margin-bottom:6px">&#128218;</div>
+          <strong style="display:block;margin-bottom:3px">Legal dict</strong>
+          <span style="color:var(--ink3)">Courts, attorneys, firms, case patterns</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="docView" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+      <div class="warn-banner" id="warnBanner">
+        <span>&#9888;&#65039;</span>
+        <span>Possible sensitive content still detected:</span>
+        <span style="font-weight:500" id="warnItems"></span>
+        <button class="btn-xs" style="margin-left:auto" onclick="document.getElementById('warnBanner').classList.remove('visible')">Dismiss</button>
+      </div>
+      <div class="doc-content-wrap">
+        <div class="doc-paper" id="docPaper"></div>
+      </div>
+      <div class="save-panel" id="savePanel">
+        <div class="save-stats" id="saveStats"></div>
+        <button class="btn" onclick="downloadTxt()">&#8595; .txt</button>
+        <button class="btn" onclick="downloadPdf()">&#8595; Redacted PDF</button>
+        <button class="btn btn-primary" onclick="showAuditModal(true)">Submit to intake &#8594;</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Label edit popover -->
+<div class="label-popover" id="labelPopover">
+  <div class="label-popover-title">Change label</div>
+  <div class="label-grid" id="labelGrid"></div>
+  <div class="label-custom-row">
+    <input class="label-custom-input" id="labelCustomInput" placeholder="[CUSTOM LABEL]" onkeydown="if(event.key==='Enter')applyCustomLabel()">
+    <button class="btn-xs" onclick="applyCustomLabel()">OK</button>
+  </div>
+</div>
+
+<!-- Audit modal -->
+<div class="modal-backdrop" id="auditModal">
+  <div class="modal">
+    <div class="modal-title">Audit record</div>
+    <div id="auditContent"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="copyAudit()">Copy JSON</button>
+      <button class="btn btn-primary" id="submitBtn" onclick="finalSubmit()">Confirm &amp; submit</button>
+      <button class="btn" onclick="document.getElementById('auditModal').classList.remove('open')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
+<script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<script type="module">
+// ── PDF.js ────────────────────────────────────────────────────
+// Using PDF.js 3.x UMD build (loaded via script tag below) 
+// v4 .mjs worker causes silent Chrome CORS failures with CDN-served workers
+let pdfjsLib = null;
+function initPdfJs() {
+  if (window.pdfjsLib) {
+    pdfjsLib = window.pdfjsLib;
+    // Use fake worker (main thread) - avoids all worker CORS issues
+    // Fine for documents under ~50 pages; no perceptible lag for legal docs
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+  }
+}
+
+// ── compromise.js NER ─────────────────────────────────────────
+let nlp = null;
+try {
+  const { default: _nlp } = await import('https://unpkg.com/compromise@14.14.3/builds/compromise.mjs');
+  nlp = _nlp;
+} catch(e) { console.warn('compromise.js load failed', e); }
+
+// ── STATE ─────────────────────────────────────────────────────
+let rawText = '';
+let currentFile = null;
+let detections = [];
+let customDict = []; // [{term, label}]
+let nextId = 0;
+let activeLabelId = null;
+
+// ── REGEX PATTERNS ────────────────────────────────────────────
+const REGEX_PATTERNS = [
+  { type:'SSN',     label:'[SSN]',         color:'--tag-ssn',     bg:'--tag-ssn-bg',     conf:0.97,
+    re:/\b(?!000|666|9\d{2})\d{3}[- ]?(?!00)\d{2}[- ]?(?!0{4})\d{4}\b/g },
+  { type:'EIN',     label:'[EIN/TAX ID]',  color:'--tag-ein',     bg:'--tag-ein-bg',     conf:0.95,
+    re:/\b\d{2}[- ]\d{7}\b/g },
+  { type:'CC',      label:'[CREDIT CARD]', color:'--tag-cc',      bg:'--tag-cc-bg',      conf:0.92,
+    re:/\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\b/g },
+  { type:'PHONE',   label:'[PHONE]',       color:'--tag-phone',   bg:'--tag-phone-bg',   conf:0.90,
+    re:/(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}(?:\s?(?:ext|x|ext\.)\s?\d{1,5})?/gi },
+  { type:'EMAIL',   label:'[EMAIL]',       color:'--tag-email',   bg:'--tag-email-bg',   conf:0.99,
+    re:/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g },
+  { type:'IP',      label:'[IP ADDRESS]',  color:'--tag-ip',      bg:'--tag-ip-bg',      conf:0.95,
+    re:/\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b/g },
+  { type:'URL',     label:'[URL]',         color:'--tag-url',     bg:'--tag-url-bg',     conf:0.95,
+    re:/https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_+.~#?&/=]*)/gi },
+  { type:'AMOUNT',  label:'[AMOUNT]',      color:'--tag-amount',  bg:'--tag-amount-bg',  conf:0.88,
+    re:/\$\s?\d{1,3}(?:,\d{3})*(?:\.\d{2})?(?:\s?(?:million|billion|thousand|M|B|K))?/g },
+  { type:'DATE',    label:'[DATE]',        color:'--tag-date',    bg:'--tag-date-bg',    conf:0.85,
+    re:/\b(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+\d{1,2},?\s+\d{4}\b|\b\d{1,2}\/\d{1,2}\/\d{2,4}\b|\b\d{4}-\d{2}-\d{2}\b/gi },
+  { type:'ADDRESS', label:'[ADDRESS]',     color:'--tag-address', bg:'--tag-address-bg', conf:0.80,
+    re:/\b\d{1,5}\s+(?:[A-Z][a-z]+\s+){1,4}(?:Street|St|Avenue|Ave|Boulevard|Blvd|Road|Rd|Drive|Dr|Lane|Ln|Way|Court|Ct|Place|Pl|Terrace|Ter|Highway|Hwy|Suite|Ste|Floor|Fl|Unit|Apt)\.?(?:\s+(?:Suite|Ste|Floor|Fl|Unit|Apt|#)\s*[\w\-]+)?\b/gi },
+  { type:'CASE NO.',label:'[CASE NO.]',    color:'--tag-case',    bg:'--tag-case-bg',    conf:0.93,
+    re:/\b(?:Index\s+No\.?|Case\s+No\.?|Docket\s+No\.?|File\s+No\.?|Claim\s+No\.?|CV|CIV|CR)\s*[\d\-\/]+/gi },
+  { type:'POLICY',  label:'[POLICY NO.]',  color:'--tag-policy',  bg:'--tag-policy-bg',  conf:0.82,
+    re:/\b(?:Policy|Claim|Certificate)\s*(?:No\.?|Number|#)\s*[\w\-\/]+/gi },
+  { type:'BAR NO.', label:'[BAR NO.]',     color:'--tag-attorney',bg:'--tag-attorney-bg',conf:0.90,
+    re:/\b(?:Bar\s+(?:No\.?|Number|#)|Registration\s+No\.?)\s*[\d]+/gi },
+];
+
+// ── LEGAL DICTIONARY ──────────────────────────────────────────
+const LEGAL_DICT_PATTERNS = [
+  { type:'COURT',    label:'[COURT]',    color:'--tag-court',    bg:'--tag-court-bg',    conf:0.88,
+    re:/\b(?:Supreme Court(?:\s+of(?:\s+the)?)?(?:\s+State\s+of\s+[A-Z][a-z]+)?|United States District Court(?:\s+for(?:\s+the)?)?(?:\s+[A-Z][a-z\s]+)?|(?:[A-Z][a-z]+\s+)?County\s+(?:Civil\s+)?(?:Supreme\s+)?Court|Court\s+of\s+(?:Appeals?|Claims?)|Family\s+Court|Surrogate(?:'s)?\s+Court|District\s+Court|Circuit\s+Court|Municipal\s+Court)\b/gi },
+  { type:'LAW FIRM', label:'[LAW FIRM]', color:'--tag-lawfirm',  bg:'--tag-lawfirm-bg',  conf:0.85,
+    re:/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:LLP|PLLC|LLC|PC|P\.C\.|L\.L\.P\.|P\.L\.L\.C\.)\b|\bLaw\s+(?:Offices?|Firm|Group)\s+of\s+[A-Z][a-z\s&]+/g },
+  { type:'ATTORNEY', label:'[ATTORNEY]', color:'--tag-attorney', bg:'--tag-attorney-bg', conf:0.82,
+    re:/\b[A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+,?\s+(?:Esq\.|J\.D\.|Attorney(?:\s+at\s+Law)?)\b|\b(?:Hon\.|Judge|Justice|The Honorable)\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+/g },
+  { type:'PARTY',    label:'[PARTY]',   color:'--tag-person',   bg:'--tag-person-bg',   conf:0.78,
+    re:/\b(?:Plaintiff|Defendant|Petitioner|Respondent|Claimant|Appellant|Appellee|Counter-(?:plaintiff|defendant)|Third-party\s+(?:plaintiff|defendant))\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+/g },
+];
+
+// ── DEDUP ─────────────────────────────────────────────────────
+function dedupeDetections(dets) {
+  dets.sort((a,b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
+  const out = [];
+  let lastEnd = -1;
+  for (const d of dets) {
+    if (d.start >= lastEnd) { out.push(d); lastEnd = d.end; }
+  }
+  return out;
+}
+
+// ── CONFIDENCE COLOR ──────────────────────────────────────────
+function confColor(c) {
+  if (c >= 0.9) return 'var(--success)';
+  if (c >= 0.75) return 'var(--warn)';
+  return 'var(--accent)';
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+function escA(s){ return s.replace(/"/g,'&quot;').replace(/'/g,'&#39;') }
+function setStatus(step,state,msg){ document.getElementById('dot-'+step).className='status-dot dot-'+state; document.getElementById('status-'+step).textContent=msg }
+function setProgress(step,pct){ document.getElementById('progress-'+step).style.width=pct+'%' }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)) }
+
+// ── LAYER 1: REGEX ────────────────────────────────────────────
+function runRegex(text) {
+  const raw = [];
+  for (const pat of [...REGEX_PATTERNS, ...LEGAL_DICT_PATTERNS]) {
+    pat.re.lastIndex = 0;
+    let m;
+    while ((m = pat.re.exec(text)) !== null) {
+      const matched = m[0].trim();
+      if (matched.length < 3) continue;
+      raw.push({ id:nextId++, type:pat.type, label:pat.label, color:pat.color, bg:pat.bg,
+        text:matched, start:m.index, end:m.index+m[0].length, conf:pat.conf, layer:'regex', status:'pending' });
+    }
+  }
+  return raw;
+}
+
+// ── LAYER 2: NER (compromise.js) ─────────────────────────────
+function runNER(text) {
+  if (!nlp) return [];
+  const doc = nlp(text);
+  const found = [];
+
+  // People
+  doc.people().forEach(p => {
+    const txt = p.text().trim();
+    if (txt.length < 4 || txt.split(' ').length < 2) return;
+    const idx = text.indexOf(txt);
+    if (idx < 0) return;
+    found.push({ id:nextId++, type:'PERSON', label:'[PERSON]', color:'--tag-person', bg:'--tag-person-bg',
+      text:txt, start:idx, end:idx+txt.length, conf:0.78, layer:'ner', status:'pending' });
+  });
+
+  // Organizations
+  doc.organizations().forEach(o => {
+    const txt = o.text().trim();
+    if (txt.length < 3) return;
+    const idx = text.indexOf(txt);
+    if (idx < 0) return;
+    found.push({ id:nextId++, type:'ORG', label:'[BUSINESS]', color:'--tag-org', bg:'--tag-org-bg',
+      text:txt, start:idx, end:idx+txt.length, conf:0.74, layer:'ner', status:'pending' });
+  });
+
+  // Places
+  doc.places().forEach(pl => {
+    const txt = pl.text().trim();
+    if (txt.length < 3) return;
+    const idx = text.indexOf(txt);
+    if (idx < 0) return;
+    found.push({ id:nextId++, type:'PLACE', label:'[LOCATION]', color:'--tag-address', bg:'--tag-address-bg',
+      text:txt, start:idx, end:idx+txt.length, conf:0.72, layer:'ner', status:'pending' });
+  });
+
+  return found;
+}
+
+// ── LAYER 3: CUSTOM DICTIONARY ────────────────────────────────
+function runDict(text) {
+  if (!customDict.length) return [];
+  const found = [];
+  for (const entry of customDict) {
+    const escaped = entry.term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const re = new RegExp('\\b' + escaped + '\\b', 'gi');
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      found.push({ id:nextId++, type:'CUSTOM', label:entry.label, color:'--tag-custom', bg:'--tag-custom-bg',
+        text:m[0], start:m.index, end:m.index+m[0].length, conf:1.0, layer:'dict', status:'pending' });
+    }
+  }
+  return found;
+}
+
+// ── RENDER DOC ────────────────────────────────────────────────
+function renderDocument() {
+  const paper = document.getElementById('docPaper');
+  if (!rawText) { paper.innerHTML=''; return; }
+  const visible = detections.filter(d => d.status !== 'rejected').sort((a,b) => a.start-b.start);
+  let html = '';
+  let cur = 0;
+  for (const d of visible) {
+    if (d.start < cur) continue;
+    html += esc(rawText.slice(cur, d.start));
+    const cls = d.status === 'accepted' ? ' accepted' : '';
+    const layerIcon = d.layer === 'ner' ? '&#129504;' : d.layer === 'dict' ? '&#128218;' : '&#128270;';
+    html += `<mark class="redact-mark${cls}" data-id="${d.id}"
+      style="background:var(${d.bg});color:var(${d.color})"
+      title="${escA(d.type+' ('+d.layer+') '+Math.round(d.conf*100)+'%')}"
+      onclick="cycleDetection(${d.id})"
+      oncontextmenu="event.preventDefault();openLabelPopover(${d.id},event)">${esc(d.text)}</mark>`;
+    cur = d.end;
+  }
+  html += esc(rawText.slice(cur));
+  paper.innerHTML = html;
+}
+
+// ── SIDEBAR ───────────────────────────────────────────────────
+function renderSidebar() {
+  const list = document.getElementById('detectionList');
+  if (!detections.length) {
+    list.innerHTML='<div style="padding:24px 17px;text-align:center;color:var(--ink3);font-size:11px">No sensitive content detected</div>';
+    return;
+  }
+  const groups = {};
+  for (const d of detections) {
+    if (!groups[d.type]) groups[d.type] = [];
+    groups[d.type].push(d);
+  }
+  let html = '';
+  for (const [type, items] of Object.entries(groups)) {
+    const f = items[0];
+    const pending = items.filter(i=>i.status==='pending').length;
+    const gid = 'grp-'+type.replace(/[^a-z0-9]/gi,'-');
+    html += `<div class="detection-group">
+      <div class="detection-group-header" onclick="toggleGroup('${gid}')">
+        <span class="type-badge" style="background:var(${f.bg});color:var(${f.color})">${esc(type)}</span>
+        <span style="font-size:10px;color:var(--ink3)">${items.length}</span>
+        <span class="detection-count" style="color:${pending>0?'var(--warn)':'var(--success)'}">${pending>0?pending+' pending':'&#10003; done'}</span>
+      </div>
+      <div class="detection-items" id="${gid}">`;
+    for (const d of items) {
+      const confPct = Math.round(d.conf*100);
+      const layerBg = d.layer==='ner'?'var(--accent2-light);color:var(--accent2)':d.layer==='dict'?'var(--success-light);color:var(--success)':'var(--surface);color:var(--ink3)';
+      html += `<div class="detection-item ${d.status}" id="di-${d.id}">
+        <span class="detection-text" title="${escA(d.text)}">${esc(d.text.substring(0,24))}${d.text.length>24?'&hellip;':''}</span>
+        <span class="detection-source" style="background:${layerBg}">${d.layer}</span>
+        <span class="det-conf" style="color:${confColor(d.conf)}">${confPct}%</span>
+        <div class="detection-actions">
+          <button class="det-btn accept-btn" title="Accept (redact)" onclick="event.stopPropagation();setDetStatus(${d.id},'accepted')">&#10003;</button>
+          <button class="det-btn label-btn" title="Change label" onclick="event.stopPropagation();openLabelPopoverById(${d.id})">&#8981;</button>
+          <button class="det-btn reject-btn" title="Keep (don&#39;t redact)" onclick="event.stopPropagation();setDetStatus(${d.id},'rejected')">&#10005;</button>
+        </div>
+      </div>`;
+    }
+    html += `</div></div>`;
+  }
+  list.innerHTML = html;
+  const pending = detections.filter(d=>d.status==='pending').length;
+  document.getElementById('bulk-count').textContent = pending+' pending';
+  updateDetectionBadges();
+}
+
+function updateDetectionBadges() {
+  const badges = document.getElementById('detectionBadges');
+  if (!badges) return;
+  const layers = { regex:0, ner:0, dict:0 };
+  detections.forEach(d => { if(layers[d.layer]!==undefined) layers[d.layer]++; });
+  badges.innerHTML = `
+    <span title="Regex detections" style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:10px">&#128270; ${layers.regex}</span>
+    <span title="NER detections" style="background:var(--accent2-light);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:10px;color:var(--accent2)">&#129504; ${layers.ner}</span>
+    <span title="Dictionary detections" style="background:var(--success-light);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:10px;color:var(--success)">&#128218; ${layers.dict}</span>`;
+}
+
+window.toggleGroup = id => { const el=document.getElementById(id); if(el) el.classList.toggle('open'); };
+window.setDetStatus = (id,status) => {
+  const d = detections.find(x=>x.id===id);
+  if(d){ d.status=status; renderDocument(); renderSidebar(); updateSaveButton(); }
+};
+window.cycleDetection = id => {
+  const d = detections.find(x=>x.id===id);
+  if(!d) return;
+  if(d.status==='pending') d.status='accepted';
+  else if(d.status==='accepted') d.status='rejected';
+  else d.status='pending';
+  renderDocument(); renderSidebar(); updateSaveButton();
+};
+window.acceptAll = () => { detections.forEach(d=>d.status='accepted'); renderDocument(); renderSidebar(); updateSaveButton(); };
+window.rejectAll = () => { detections.forEach(d=>d.status='rejected'); renderDocument(); renderSidebar(); updateSaveButton(); };
+window.acceptByLayer = layer => { detections.filter(d=>d.layer===layer).forEach(d=>d.status='accepted'); renderDocument(); renderSidebar(); updateSaveButton(); };
+window.panicRedact = () => {
+  if(!confirm('Redact ALL detected items? This includes NER, regex, and dictionary matches.')) return;
+  acceptAll();
+};
+
+// ── LABEL POPOVER ─────────────────────────────────────────────
+const LABEL_OPTIONS = ['[PERSON]','[BUSINESS]','[ATTORNEY]','[LAW FIRM]','[COURT]','[EMPLOYEE]','[CLIENT]','[CASE NO.]','[AMOUNT]','[DATE]','[ADDRESS]','[EMAIL]','[PHONE]','[POLICY NO.]','[CUSTOM]'];
+
+window.openLabelPopover = (id, evt) => {
+  activeLabelId = id;
+  const d = detections.find(x=>x.id===id);
+  const pop = document.getElementById('labelPopover');
+  document.getElementById('labelGrid').innerHTML = LABEL_OPTIONS.map(l =>
+    `<div class="label-opt${d&&d.label===l?' selected':''}" onclick="applyLabel('${l}')">${esc(l)}</div>`
+  ).join('');
+  document.getElementById('labelCustomInput').value = d?.label||'';
+  pop.style.left = Math.min(evt.clientX, window.innerWidth-220)+'px';
+  pop.style.top = Math.min(evt.clientY, window.innerHeight-260)+'px';
+  pop.classList.add('open');
+  evt.stopPropagation();
+};
+window.openLabelPopoverById = id => {
+  const el = document.getElementById('di-'+id);
+  const rect = el?.getBoundingClientRect();
+  if(!rect) return;
+  openLabelPopover(id, { clientX: rect.right+4, clientY: rect.top, stopPropagation:()=>{} });
+};
+window.applyLabel = label => {
+  const d = detections.find(x=>x.id===activeLabelId);
+  if(d){ d.label=label; renderDocument(); renderSidebar(); }
+  document.getElementById('labelPopover').classList.remove('open');
+};
+window.applyCustomLabel = () => {
+  const v = document.getElementById('labelCustomInput').value.trim();
+  if(!v) return;
+  applyLabel(v.startsWith('[') ? v : '['+v+']');
+};
+document.addEventListener('click', () => document.getElementById('labelPopover').classList.remove('open'));
+
+// ── DICTIONARY UI ─────────────────────────────────────────────
+window.addDictTerm = () => {
+  const term = document.getElementById('dictTermInput').value.trim();
+  const label = document.getElementById('dictLabelSelect').value;
+  if(!term) return;
+  if(customDict.find(e=>e.term.toLowerCase()===term.toLowerCase())) {
+    alert('Term already in dictionary.'); return;
+  }
+  customDict.push({term,label});
+  document.getElementById('dictTermInput').value='';
+  renderDictList();
+};
+window.removeDictTerm = idx => {
+  customDict.splice(idx,1); renderDictList();
+};
+function renderDictList() {
+  const wrap = document.getElementById('dictList');
+  const empty = document.getElementById('dictEmpty');
+  document.getElementById('dictCount').textContent = customDict.length;
+  if(!customDict.length){ empty.style.display='block'; wrap.innerHTML='<div class="dict-empty" id="dictEmpty">No custom terms yet</div>'; return; }
+  wrap.innerHTML = customDict.map((e,i)=>`
+    <div class="dict-item">
+      <span class="type-badge" style="background:var(--tag-custom-bg);color:var(--tag-custom)">${esc(e.label)}</span>
+      <span class="dict-item-text" title="${escA(e.term)}">${esc(e.term)}</span>
+      <button class="dict-del" onclick="removeDictTerm(${i})" title="Remove">&#10005;</button>
+    </div>`).join('');
+}
+renderDictList();
+
+// Show active legal patterns in the dictionary panel
+const legalList = document.getElementById('legalPatternList');
+if(legalList) {
+  legalList.innerHTML = LEGAL_DICT_PATTERNS.map(p=>`
+    <div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border)">
+      <span class="type-badge" style="background:var(${p.bg});color:var(${p.color})">${p.type}</span>
+      <span style="font-size:10px;color:var(--ink3);font-family:'DM Mono',monospace">${p.label}</span>
+      <span style="margin-left:auto;font-size:9px;color:${confColor(p.conf)}">${Math.round(p.conf*100)}%</span>
+    </div>`).join('');
+}
+
+// ── TABS ──────────────────────────────────────────────────────
+window.switchTab = tab => {
+  document.querySelectorAll('.left-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.left-tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('panel-'+tab).classList.add('active');
+};
+
+// ── SAVE BUTTON ───────────────────────────────────────────────
+function updateSaveButton() {
+  const pending = detections.filter(d=>d.status==='pending').length;
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = pending > 0;
+  btn.title = pending>0 ? pending+' items still pending review' : 'Save redacted version';
+}
+
+// ── PRESAVE SCAN ──────────────────────────────────────────────
+window.presaveScan = () => {
+  const redacted = buildRedactedText();
+  const remaining = runRegex(redacted).filter(d=>d.conf>=0.85);
+  const warnBanner = document.getElementById('warnBanner');
+  if(remaining.length>0){
+    const types={};
+    remaining.forEach(d=>{ types[d.type]=(types[d.type]||0)+1; });
+    document.getElementById('warnItems').textContent = Object.entries(types).map(([t,c])=>`${c} ${t}`).join(', ');
+    warnBanner.classList.add('visible');
+    // Still show save panel
+    showSavePanel();
+  } else {
+    warnBanner.classList.remove('visible');
+    showSavePanel();
+  }
+};
+
+function showSavePanel() {
+  const accepted = detections.filter(d=>d.status==='accepted').length;
+  const rejected = detections.filter(d=>d.status==='rejected').length;
+  const kept = detections.filter(d=>d.status==='rejected').length;
+  const byType={};
+  detections.filter(d=>d.status==='accepted').forEach(d=>{ byType[d.type]=(byType[d.type]||0)+1; });
+  const summary = Object.entries(byType).map(([t,c])=>`<strong>${c}</strong> ${t}`).join(' &middot; ');
+  document.getElementById('saveStats').innerHTML = `Redacted: ${summary || '<em>none</em>'} &nbsp;&middot;&nbsp; ${kept} kept`;
+  document.getElementById('savePanel').classList.add('visible');
+  document.getElementById('pipe-review').classList.add('done');
+  document.getElementById('pipe-review').classList.remove('active');
+  document.getElementById('pipe-output').classList.add('active');
+}
+
+// ── BUILD REDACTED TEXT ───────────────────────────────────────
+function buildRedactedText() {
+  const sorted = [...detections].filter(d=>d.status==='accepted').sort((a,b)=>a.start-b.start);
+  let result='', cur=0;
+  for(const d of sorted){
+    if(d.start<cur) continue;
+    result += rawText.slice(cur,d.start) + d.label;
+    cur = d.end;
+  }
+  return result + rawText.slice(cur);
+}
+
+// ── DOWNLOAD ──────────────────────────────────────────────────
+window.downloadTxt = () => {
+  const text = buildRedactedText();
+  const blob = new Blob([text],{type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=(currentFile?.name.replace(/\.[^.]+$/,'')||'document')+'_REDACTED.txt';
+  a.click(); URL.revokeObjectURL(url);
+};
+
+window.downloadPdf = async () => {
+  const { jsPDF } = window.jspdf || {};
+  if (!jsPDF) { alert('jsPDF not loaded — downloading as .txt instead'); downloadTxt(); return; }
+
+  // Always build the PDF from the redacted text string — never from the original file.
+  // For scanned/OCR sources this is the critical step: the output PDF is a brand-new
+  // text-only document. The original camera image is completely absent.
+  const redactedText = buildRedactedText();
+  const baseName = (currentFile?.name.replace(/\.[^.]+$/, '') || 'document');
+  const accepted  = detections.filter(d => d.status === 'accepted').length;
+  const now       = new Date().toLocaleString();
+
+  try {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+    const margin  = 72;
+    const pageW   = doc.internal.pageSize.getWidth();
+    const pageH   = doc.internal.pageSize.getHeight();
+    const usable  = pageW - margin * 2;
+
+    // ── Cover stamp ────────────────────────────────────────────
+    // Tells any downstream reviewer exactly what kind of document this is
+    // and confirms the original was never embedded.
+    doc.setFillColor(245, 232, 227);      // accent-light warm
+    doc.rect(margin, margin - 10, usable, 68, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(181, 69, 27);        // --accent
+    doc.text('REDACTED DOCUMENT — REBUILT FROM TEXT', margin + 10, margin + 14);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(90, 84, 78);
+    doc.text('Source file: ' + baseName, margin + 10, margin + 30);
+    doc.text('Redactions applied: ' + accepted, margin + 10, margin + 43);
+    doc.text('Generated: ' + now + '  |  Original image: NOT PRESENT IN THIS FILE', margin + 10, margin + 56);
+
+    // Separator line
+    doc.setDrawColor(224, 219, 212);
+    doc.line(margin, margin + 72, pageW - margin, margin + 72);
+
+    // ── Body text ──────────────────────────────────────────────
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10.5);
+    doc.setTextColor(15, 14, 13);         // --ink
+
+    const lines  = doc.splitTextToSize(redactedText, usable);
+    let y        = margin + 90;
+    const lineH  = 15;
+
+    for (const line of lines) {
+      if (y + lineH > pageH - margin) {
+        doc.addPage();
+        y = margin;
+      }
+      // Highlight redaction labels so reviewers can spot them instantly
+      if (/^\[.+\]$/.test(line.trim())) {
+        doc.setTextColor(27, 94, 181);    // --accent2 blue
+        doc.setFont('helvetica', 'bold');
+        doc.text(line, margin, y);
+        doc.setTextColor(15, 14, 13);
+        doc.setFont('helvetica', 'normal');
+      } else {
+        // Inline label highlighting within a line
+        doc.text(line, margin, y);
+      }
+      y += lineH;
+    }
+
+    // ── Document properties — strip identifying metadata ───────
+    doc.setProperties({
+      title:    'REDACTED DOCUMENT',
+      author:   'LegalRedact',
+      subject:  'Rebuilt from redacted text — original document not embedded',
+      keywords: '',
+      creator:  'LegalRedact v3'
+      // Intentionally omit: source filename, user identity, creation tool version details
+    });
+
+    doc.save(baseName + '_REDACTED.pdf');
+
+    // Confirm to user what happened (especially important for scanned sources)
+    if (wasScannedSource) {
+      console.log('[LegalRedact] PDF output: rebuilt from OCR text — original image NOT present');
+    }
+
+  } catch(e) {
+    console.error('[LegalRedact] PDF generation error:', e);
+    downloadTxt();
+  }
+};
+
+// ── AUDIT MODAL ───────────────────────────────────────────────
+function buildAuditRecord() {
+  const accepted = detections.filter(d=>d.status==='accepted');
+  const byType={}, byLayer={regex:0,ner:0,dict:0};
+  accepted.forEach(d=>{
+    byType[d.type]=(byType[d.type]||0)+1;
+    if(byLayer[d.layer]!==undefined) byLayer[d.layer]++;
+  });
+  return {
+    document_id: 'doc_'+Date.now(),
+    filename: currentFile?.name||'unknown',
+    stored_version: 'redacted_only',
+    original_file_stored: false,
+    original_text_stored: false,
+    detector_version: 'sprint3-regex-ner-dict-v3.0',
+    ner_engine: nlp ? 'compromise.js@14' : 'unavailable',
+    total_detections: detections.length,
+    total_redacted: accepted.length,
+    total_kept: detections.filter(d=>d.status==='rejected').length,
+    redactions_by_type: byType,
+    redactions_by_layer: byLayer,
+    custom_dict_terms: customDict.length,
+    manual_review_completed: true,
+    saved_at: new Date().toISOString(),
+    privacy_promise: 'Original document never transmitted to server'
+  };
+}
+
+window.showAuditModal = (forSubmit) => {
+  const rec = buildAuditRecord();
+  const modal = document.getElementById('auditModal');
+  const content = document.getElementById('auditContent');
+  document.getElementById('submitBtn').style.display = forSubmit ? 'flex' : 'none';
+  const auditRow = (k,v) => `<div class="audit-row"><span class="audit-key">${k}</span><span class="audit-val">${v}</span></div>`;
+  let html = '<div class="audit-section-label">Document</div>';
+  html += auditRow('filename', esc(rec.filename));
+  html += auditRow('document_id', rec.document_id);
+  html += auditRow('stored_version', rec.stored_version);
+  html += auditRow('original_file_stored', ''+rec.original_file_stored);
+  html += auditRow('original_text_stored', ''+rec.original_text_stored);
+  html += '<div class="audit-section-label">Detection</div>';
+  html += auditRow('detector_version', rec.detector_version);
+  html += auditRow('ner_engine', rec.ner_engine);
+  html += auditRow('total_detections', rec.total_detections);
+  html += auditRow('total_redacted', rec.total_redacted);
+  html += auditRow('total_kept', rec.total_kept);
+  html += auditRow('custom_dict_terms', rec.custom_dict_terms);
+  html += '<div class="audit-section-label">Redactions by layer</div>';
+  html += auditRow('regex', rec.redactions_by_layer.regex);
+  html += auditRow('ner', rec.redactions_by_layer.ner);
+  html += auditRow('dictionary', rec.redactions_by_layer.dict);
+  html += '<div class="audit-section-label">Redactions by type</div>';
+  for(const [t,c] of Object.entries(rec.redactions_by_type)) html += auditRow(t,c);
+  html += '<div class="audit-section-label">Metadata</div>';
+  html += auditRow('manual_review_completed', ''+rec.manual_review_completed);
+  html += auditRow('saved_at', rec.saved_at);
+  html += auditRow('privacy_promise', esc(rec.privacy_promise));
+  content.innerHTML = html;
+  window._currentAuditRecord = rec;
+  modal.classList.add('open');
+};
+
+window.copyAudit = () => {
+  navigator.clipboard?.writeText(JSON.stringify(window._currentAuditRecord, null, 2));
+  alert('Audit record JSON copied to clipboard.');
+};
+
+window.finalSubmit = async () => {
+  const submitBtn = document.getElementById('submitBtn');
+  const origText = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:1.5px;display:inline-block"></span> Submitting…';
+  try {
+    await simulateServerPost();
+  } catch(e) {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = origText;
+    alert('Submission failed: ' + e.message);
+  }
+};
+
+async function simulateServerPost() {
+  // Simulate network latency
+  await sleep(900 + Math.random()*600);
+
+  const rec = window._currentAuditRecord;
+  const redactedText = buildRedactedText();
+
+  // Generate confirmation number
+  const confirmNum = 'LR-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random()*999999)).padStart(6,'0');
+  const submittedAt = new Date().toISOString();
+  const shortHash = btoa(redactedText.slice(0,64)).replace(/[^a-zA-Z0-9]/g,'').substring(0,12).toUpperCase();
+
+  // Build intake record (what server would store)
+  const intakeRecord = {
+    confirmation_number: confirmNum,
+    document_id: rec.document_id,
+    intake_status: 'received',
+    assigned_queue: classifyMatterType(redactedText),
+    submitted_at: submittedAt,
+    file_hash_redacted: shortHash,
+    file_size_bytes: new Blob([redactedText]).size,
+    total_redactions: rec.total_redacted,
+    redactions_by_type: rec.redactions_by_type,
+    redactions_by_layer: rec.redactions_by_layer,
+    detector_version: rec.detector_version,
+    original_stored: false,
+    review_eta: getReviewEta()
+  };
+
+  // Save to session history
+  submissionHistory.push({ ...intakeRecord, filename: currentFile?.name||'unknown' });
+  renderSubmissionHistory();
+
+  // Close modal
+  document.getElementById('auditModal').classList.remove('open');
+
+  // Show success state
+  showSuccessState(intakeRecord);
+
+  // Log what would go to server
+  console.log('[SPRINT 3 — simulated POST /api/intake]');
+  console.log('Payload type: multipart/form-data');
+  console.log('Field: redacted_document (text/plain, ' + new Blob([redactedText]).size + ' bytes)');
+  console.log('Field: audit_record', JSON.stringify(intakeRecord, null, 2));
+  console.log('Original file: NOT included — never transmitted');
+}
+
+function classifyMatterType(text) {
+  const t = text.toLowerCase();
+  if (/personal.injur|slip.and.fall|negligence|bodily.injur/.test(t)) return 'personal-injury';
+  if (/breach.of.contract|agreement|covenant|damages/.test(t)) return 'contract-dispute';
+  if (/employment|termination|discriminat|harassment|wrongful/.test(t)) return 'employment';
+  if (/property.damage|real.property|lease|eviction|landlord/.test(t)) return 'property';
+  if (/fraud|misrepresent|consumer|ftc|deceptive/.test(t)) return 'consumer-fraud';
+  return 'general-civil';
+}
+
+function getReviewEta() {
+  const d = new Date();
+  d.setDate(d.getDate() + 2);
+  // Skip weekends
+  if (d.getDay() === 0) d.setDate(d.getDate()+1);
+  if (d.getDay() === 6) d.setDate(d.getDate()+2);
+  return d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+}
+
+function showSuccessState(rec) {
+  // Replace right panel content with success screen
+  const docView = document.getElementById('docView');
+  const landing = document.getElementById('landingView');
+  const toolbar = document.getElementById('docToolbar');
+
+  toolbar.style.display = 'none';
+  docView.style.display = 'none';
+  landing.style.display = 'flex';
+  landing.innerHTML = buildSuccessHTML(rec);
+
+  // Update all pipeline steps to done
+  ['extract','regex','ner','dict','review','output'].forEach(s => {
+    const el = document.getElementById('pipe-'+s);
+    if(el){ el.className='pipe-step done'; }
+  });
+}
+
+function buildSuccessHTML(rec) {
+  const queueLabels = {
+    'personal-injury': 'Personal Injury',
+    'contract-dispute': 'Contract Dispute',
+    'employment': 'Employment Matter',
+    'property': 'Property Matter',
+    'consumer-fraud': 'Consumer / Fraud',
+    'general-civil': 'General Civil'
+  };
+  return `
+  <div style="max-width:540px;width:100%">
+    <div style="width:52px;height:52px;background:var(--success-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 20px">&#10003;</div>
+    <div style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:8px;color:var(--ink)">Document submitted</div>
+    <div style="font-size:13px;color:var(--ink3);margin-bottom:28px;line-height:1.6">Your redacted document has been received. The original was never transmitted — only the version you approved.</div>
+
+    <div style="background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px 24px;margin-bottom:18px">
+      <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Confirmation number</div>
+      <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:500;color:var(--ink);letter-spacing:2px;margin-bottom:14px">${esc(rec.confirmation_number)}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">Matter type</div>
+          <div style="font-size:12px;font-weight:500">${esc(queueLabels[rec.assigned_queue]||rec.assigned_queue)}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">Est. review by</div>
+          <div style="font-size:12px;font-weight:500">${esc(rec.review_eta)}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">Redactions applied</div>
+          <div style="font-size:12px;font-weight:500">${rec.total_redactions}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--ink3);margin-bottom:2px">File hash (redacted)</div>
+          <div style="font-size:11px;font-weight:500;font-family:'DM Mono',monospace">${rec.file_hash_redacted}</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--success-light);border:1px solid #9dd4ae;border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:18px;font-size:12px;color:var(--success);display:flex;gap:10px;align-items:flex-start">
+      <span style="font-size:16px;flex-shrink:0">&#128737;</span>
+      <span><strong>Privacy confirmed:</strong> Your original document was processed entirely in your browser and was never transmitted to our servers. Only the redacted version you approved was sent.</span>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button class="btn" onclick="startNewDocument()">&#43; Submit another document</button>
+      <button class="btn" onclick="switchTab('history');document.getElementById('tab-history').click()">View submission history</button>
+    </div>
+  </div>`;
+}
+
+window.startNewDocument = () => {
+  const landing = document.getElementById('landingView');
+  const toolbar = document.getElementById('docToolbar');
+  landing.innerHTML = originalLandingHTML;
+  landing.style.display = 'flex';
+  toolbar.style.display = 'none';
+  document.getElementById('docView').style.display = 'none';
+  document.getElementById('statusCard').style.display = 'none';
+  ['extract','regex','ner','dict','review','output'].forEach(s => {
+    const el=document.getElementById('pipe-'+s);
+    if(el) el.className='pipe-step';
+  });
+  document.getElementById('pipe-extract').className='pipe-step';
+  rawText=''; currentFile=null; detections=[];
+  document.getElementById('fileInput').value='';
+  switchTab('detections');
+  document.getElementById('detectionList').innerHTML='<div style="padding:28px 17px;text-align:center;color:var(--ink3);font-size:11px">Upload a document to begin scanning</div>';
+  document.getElementById('bulkBar').classList.remove('visible');
+};
+
+// ── EXTRACTION ────────────────────────────────────────────────
+async function extractTxt(file) {
+  return new Promise((res,rej) => { const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsText(file); });
+}
+async function extractDocx(file) {
+  return new Promise((res,rej) => {
+    const r=new FileReader();
+    r.onload=async e => { try{ const result=await mammoth.extractRawText({arrayBuffer:e.target.result}); res(result.value); }catch(err){rej(err);} };
+    r.onerror=rej; r.readAsArrayBuffer(file);
+  });
+}
+async function extractPdf(file) {
+  initPdfJs();
+
+  // ── Strategy selector ─────────────────────────────────────────
+  // 1. PDF.js text layer  (searchable/word-processor PDFs)
+  // 2. Raw JPEG extraction (phone-scanned PDFs — most reliable, no canvas/worker)
+  // 3. PDF.js canvas OCR  (fallback for non-JPEG scans)
+  // 4. Raw byte strings   (last resort)
+
+  try {
+    const ab = await file.arrayBuffer();
+
+    // ── Pass 1: native text layer via PDF.js ──────────────────
+    if (pdfjsLib) {
+      try {
+        setStatus('extract','running','Loading PDF…');
+        const loadingTask = pdfjsLib.getDocument({ data: ab.slice(0), disableWorker: true });
+        const pdf = await loadingTask.promise;
+        const total = pdf.numPages;
+        let text = '';
+
+        for (let i = 1; i <= total; i++) {
+          setProgress('extract', 10 + Math.round((i/total)*45));
+          setStatus('extract','running',`Reading text layer — page ${i} of ${total}…`);
+          await sleep(0);
+          const page = await pdf.getPage(i);
+          const tc = await page.getTextContent();
+          let pt = '', lastY = null;
+          for (const item of tc.items) {
+            if (lastY !== null && Math.abs(item.transform[5]-lastY) > 5) pt += '\n';
+            pt += item.str;
+            if (item.hasEOL) pt += '\n';
+            else if (item.str && !item.str.endsWith(' ')) pt += ' ';
+            lastY = item.transform[5];
+          }
+          text += pt.trim() + '\n\n';
+        }
+
+        if (text.trim().length > 40) {
+          setProgress('extract', 100);
+          return text;
+        }
+        // Text layer empty → fall through to image extraction
+        setStatus('extract','running','No text layer — extracting embedded images…');
+      } catch(e) {
+        setStatus('extract','running','PDF.js text pass failed — trying image extraction…');
+        console.warn('[LegalRedact] PDF.js text layer error:', e.message);
+      }
+    }
+
+    // ── Pass 2: extract embedded JPEGs/PNGs directly from PDF bytes ──
+    // Phone scanner apps (iOS, Android) embed full-res JPEG frames.
+    // This completely bypasses canvas rendering — no Chrome restrictions.
+    setStatus('extract','running','Extracting embedded images from PDF…');
+    setProgress('extract', 55);
+
+    const images = extractImagesFromPdfBytes(new Uint8Array(ab));
+    console.log(`[LegalRedact] Found ${images.length} embedded image(s) in PDF`);
+
+    if (images.length > 0) {
+      return await ocrImageList(images);
+    }
+
+    // ── Pass 3: PDF.js canvas render (non-JPEG scans, vector art PDFs) ──
+    if (pdfjsLib) {
+      setStatus('extract','running','No embedded images — rendering pages to canvas…');
+      try {
+        const loadingTask2 = pdfjsLib.getDocument({ data: ab.slice(0), disableWorker: true });
+        const pdf2 = await loadingTask2.promise;
+        return await extractPdfViaCanvas(pdf2, pdf2.numPages);
+      } catch(e) {
+        console.warn('[LegalRedact] Canvas render failed:', e.message);
+      }
+    }
+
+    // ── Pass 4: raw byte string extraction ────────────────────
+    setStatus('extract','running','Trying raw text extraction…');
+    return pdfRawTextFallback(new Uint8Array(ab));
+
+  } catch(e) {
+    throw new Error('PDF extraction failed: ' + e.message);
+  }
+}
+
+// ── Extract JPEG/PNG image bytes directly from PDF binary ────────
+// PDF format stores JPEG streams preceded by markers we can find.
+// No rendering engine needed — just parse the raw bytes.
+function extractImagesFromPdfBytes(bytes) {
+  const images = [];
+
+  // ── JPEG streams (most phone scanner PDFs) ─────────────────
+  // JPEG SOI marker: FF D8 FF
+  // JPEG EOI marker: FF D9
+  for (let i = 0; i < bytes.length - 3; i++) {
+    if (bytes[i] === 0xFF && bytes[i+1] === 0xD8 && bytes[i+2] === 0xFF) {
+      // Find matching EOI
+      for (let j = i + 3; j < bytes.length - 1; j++) {
+        if (bytes[j] === 0xFF && bytes[j+1] === 0xD9) {
+          const jpegBytes = bytes.slice(i, j + 2);
+          // Filter out tiny thumbnails (< 10KB is probably a thumbnail)
+          if (jpegBytes.length > 10000) {
+            images.push({ type: 'jpeg', data: jpegBytes });
+          }
+          i = j + 1; // advance past this image
+          break;
+        }
+      }
+    }
+  }
+
+  // ── PNG streams ─────────────────────────────────────────────
+  // PNG signature: 89 50 4E 47 0D 0A 1A 0A
+  // PNG IEND chunk: 49 45 4E 44 AE 42 60 82
+  const PNG_SIG  = [0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A];
+  const PNG_IEND = [0x49,0x45,0x4E,0x44,0xAE,0x42,0x60,0x82];
+  for (let i = 0; i < bytes.length - 8; i++) {
+    if (PNG_SIG.every((b,k) => bytes[i+k] === b)) {
+      for (let j = i + 8; j < bytes.length - 8; j++) {
+        if (PNG_IEND.every((b,k) => bytes[j+k] === b)) {
+          const pngBytes = bytes.slice(i, j + 8);
+          if (pngBytes.length > 10000) {
+            images.push({ type: 'png', data: pngBytes });
+          }
+          i = j + 7;
+          break;
+        }
+      }
+    }
+  }
+
+  return images;
+}
+
+// ── OCR a list of {type, data} image objects via Tesseract ───────
+async function ocrImageList(images) {
+  wasScannedSource = true; // OCR path — output must be rebuilt as clean text-only PDF
+  let allText = '';
+  const total = images.length;
+
+  for (let i = 0; i < total; i++) {
+    setStatus('extract','running',`OCR — image ${i+1} of ${total}…`);
+    setProgress('extract', 55 + Math.round((i/total)*40));
+    await sleep(10);
+
+    // Convert raw bytes → base64 data URL
+    const mime = images[i].type === 'png' ? 'image/png' : 'image/jpeg';
+    const b64  = uint8ToBase64(images[i].data);
+    const dataUrl = `data:${mime};base64,${b64}`;
+
+    try {
+      const result = await Tesseract.recognize(dataUrl, 'eng', {
+        logger: m => {
+          if (m.status === 'recognizing text') {
+            const base  = 55 + Math.round((i/total)*40);
+            const slice = Math.round((1/total)*40);
+            setProgress('extract', Math.min(95, base + Math.round(m.progress*slice)));
+          }
+        }
+      });
+      const pageText = result?.data?.text?.trim() || '';
+      console.log(`[LegalRedact] Image ${i+1} OCR: ${pageText.length} chars`);
+      if (pageText) allText += pageText + '\n\n';
+    } catch(e) {
+      console.warn(`[LegalRedact] Tesseract failed on image ${i+1}:`, e.message);
+    }
+  }
+
+  if (!allText.trim()) {
+    throw new Error(
+      'OCR could not extract text from ' + total + ' image(s) found in the PDF. ' +
+      'The scan may be too dark, blurry, or rotated. ' +
+      'Try saving each page as a JPG (screenshot or export) and upload those directly.'
+    );
+  }
+  return allText;
+}
+
+// ── Convert Uint8Array → base64 string (chunked to avoid stack overflow) ──
+function uint8ToBase64(bytes) {
+  let binary = '';
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+// ── PDF.js canvas render → Tesseract (fallback for vector/non-JPEG PDFs) ──
+async function extractPdfViaCanvas(pdf, total) {
+  wasScannedSource = true; // canvas OCR path — output must be rebuilt as clean text-only PDF
+  let allText = '';
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = 'position:fixed;top:-9999px;left:-9999px';
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+  try {
+    for (let i = 1; i <= total; i++) {
+      setStatus('extract','running',`Canvas OCR — page ${i} of ${total}…`);
+      setProgress('extract', 55 + Math.round(((i-1)/total)*40));
+      await sleep(10);
+
+      const page = await pdf.getPage(i);
+      const scale = Math.min(2.0, 3000 / Math.max(page.getViewport({scale:1}).width, 1));
+      const vp = page.getViewport({ scale });
+      canvas.width  = Math.floor(vp.width);
+      canvas.height = Math.floor(vp.height);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+      // Small forced delay — lets Chrome flush GPU compositing
+      await new Promise(r => setTimeout(r, 80));
+
+      let dataUrl;
+      try { dataUrl = canvas.toDataURL('image/jpeg', 0.95); }
+      catch(e) { console.warn('toDataURL failed:', e.message); continue; }
+
+      if (!dataUrl || dataUrl.length < 2000) {
+        console.warn(`[LegalRedact] Page ${i} canvas empty`);
+        continue;
+      }
+
+      const result = await Tesseract.recognize(dataUrl, 'eng', {
+        logger: m => {
+          if (m.status==='recognizing text') {
+            setProgress('extract', Math.min(95,
+              55 + Math.round(((i-1)/total)*40) + Math.round(m.progress*(40/total))
+            ));
+          }
+        }
+      });
+      const pt = result?.data?.text?.trim() || '';
+      if (pt) allText += pt + '\n\n';
+    }
+  } finally {
+    canvas.remove();
+  }
+  if (!allText.trim()) throw new Error('Canvas OCR produced no text.');
+  return allText;
+}
+
+// ── Raw byte string extraction (absolute last resort) ────────────
+function pdfRawTextFallback(bytes) {
+  let text = '', run = '';
+  for (let i = 0; i < bytes.length; i++) {
+    const c = bytes[i];
+    if (c >= 32 && c < 127) run += String.fromCharCode(c);
+    else { if (run.length > 5) text += run + ' '; run = ''; }
+  }
+  const lines = text.split(/\s{2,}/).filter(l => l.length > 8 && /[a-zA-Z]{3,}/.test(l));
+  if (!lines.length) throw new Error('Could not extract any content from this PDF.');
+  return lines.join('\n');
+}
+
+// ── MAIN PIPELINE ─────────────────────────────────────────────
+async function processFile(file) {
+  currentFile=file; nextId=0; detections=[];rawText='';
+  document.getElementById('statusCard').style.display='block';
+  document.getElementById('docToolbar').style.display='flex';
+  document.getElementById('landingView').style.display='none';
+  const dv=document.getElementById('docView');
+  dv.style.display='flex'; dv.style.flexDirection='column';
+  document.getElementById('docFilename').textContent=file.name;
+  document.getElementById('savePanel').classList.remove('visible');
+  document.getElementById('warnBanner').classList.remove('visible');
+  document.getElementById('saveBtn').disabled=true;
+  document.getElementById('docPaper').innerHTML='<div class="loading-overlay"><div class="spinner"></div><div class="loading-msg" id="loadingMsg">Processing…</div></div>';
+
+  // Reset pipeline steps
+  ['extract','regex','ner','dict','review','output'].forEach(s=>{
+    const el=document.getElementById('pipe-'+s);
+    if(el){el.className='pipe-step'; if(s==='extract') el.classList.add('active');}
+  });
+  ['extract','regex','ner','dict'].forEach(s=>{setStatus(s,'idle',''); setProgress(s,0);});
+  initPdfJs(); // ensure PDF.js UMD global is captured before processing
+  wasScannedSource = false; // reset for each new document
+  setStatus('extract','running','Starting extraction…');
+
+  try {
+    const ext=file.name.split('.').pop().toLowerCase();
+    if(ext==='txt'){ setStatus('extract','running','Reading text…'); rawText=await extractTxt(file); setProgress('extract',100); }
+    else if(ext==='docx'){ setStatus('extract','running','Mammoth.js extraction…'); rawText=await extractDocx(file); setProgress('extract',100); }
+    else if(ext==='pdf'){ rawText=await extractPdf(file); setProgress('extract',100); }
+    else if(/^(?:png|jpg|jpeg|tiff?|bmp|webp)$/.test(ext)){ rawText=await extractImage(file); setProgress('extract',100); }
+    else { setStatus('extract','error','Unsupported file type'); return; }
+
+    setStatus('extract','done',`${rawText.length.toLocaleString()} chars extracted`);
+    document.getElementById('pipe-extract').className='pipe-step done';
+    document.getElementById('pipe-regex').className='pipe-step active';
+
+    // Layer 1: Regex
+    setStatus('regex','running','Running regex + legal patterns…'); setProgress('regex',5);
+    await sleep(40);
+    const regexHits = runRegex(rawText);
+    setProgress('regex',100); setStatus('regex','done',`${regexHits.length} hits`);
+    document.getElementById('pipe-regex').className='pipe-step done';
+    document.getElementById('pipe-ner').className='pipe-step active';
+
+    // Layer 2: NER
+    setStatus('ner','running','compromise.js entity recognition…'); setProgress('ner',10);
+    await sleep(60);
+    const nerHits = runNER(rawText);
+    setProgress('ner',100); setStatus('ner','done',`${nerHits.length} entities`);
+    document.getElementById('pipe-ner').className='pipe-step done';
+    document.getElementById('pipe-dict').className='pipe-step active';
+
+    // Layer 3: Dictionary
+    setStatus('dict','running','Custom dictionary scan…'); setProgress('dict',10);
+    await sleep(30);
+    const dictHits = runDict(rawText);
+    setProgress('dict',100); setStatus('dict','done',`${dictHits.length} matches`);
+    document.getElementById('pipe-dict').className='pipe-step done';
+    document.getElementById('pipe-review').className='pipe-step active';
+
+    // Merge and dedup
+    detections = dedupeDetections([...regexHits, ...nerHits, ...dictHits]);
+    renderDocument();
+    renderSidebar();
+    updateSaveButton();
+    // Update PDF download button label to reflect source type
+    const pdfBtn = document.querySelector('.save-panel .btn[onclick="downloadPdf()"]');
+    if (pdfBtn) {
+      pdfBtn.textContent = wasScannedSource
+        ? '↓ Redacted PDF (rebuilt — image removed)'
+        : '↓ Redacted PDF';
+    }
+    if(detections.length>0){
+      document.getElementById('bulkBar').classList.add('visible');
+      const firstGroup='grp-'+detections[0].type.replace(/[^a-z0-9]/gi,'-');
+      document.getElementById(firstGroup)?.classList.add('open');
+    }
+  } catch(err) {
+    setStatus('extract','error','Error: '+err.message);
+    console.error('[LegalRedact extraction error]', err);
+    const isPdfErr = currentFile?.name?.toLowerCase().endsWith('.pdf');
+    document.getElementById('docPaper').innerHTML = `
+      <div style="padding:32px;text-align:center;max-width:480px;margin:0 auto">
+        <div style="font-size:32px;margin-bottom:14px;opacity:.4">&#9888;</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:10px;color:var(--ink)">Extraction error</div>
+        <div style="font-size:13px;color:var(--ink3);line-height:1.65;margin-bottom:18px">${err.message}</div>
+        ${isPdfErr ? `<div style="background:var(--warn-light);border:1px solid #e0c040;border-radius:8px;padding:14px 16px;font-size:12px;color:var(--warn);text-align:left;line-height:1.6">
+          <strong>PDF tips:</strong><br>
+          &bull; Make sure the PDF has a selectable text layer (not a scanned image)<br>
+          &bull; Try opening in Adobe Reader or Preview, then File &rarr; Save As &rarr; PDF to flatten<br>
+          &bull; Or export from your word processor as PDF (not printed-to-PDF)<br>
+          &bull; Alternatively, copy-paste the text into a .txt file and upload that
+        </div>` : ''}
+      </div>`;
+  }
+}
+
+
+// ── SPRINT 3: STATE ────────────────────────────────────────────
+let submissionHistory = [];
+let wasScannedSource = false; // true when OCR was used — PDF output must be rebuilt from text
+let currentRole = 'business_owner'; // or 'intake_team'
+const originalLandingHTML = document.getElementById('landingView').innerHTML;
+const SESSION_ID = 'S3-' + Math.random().toString(36).substring(2,9).toUpperCase();
+document.getElementById('rbacSessionId').textContent = 'Session: ' + SESSION_ID;
+
+// ── SPRINT 3: ROLE SWITCHER ────────────────────────────────────
+window.switchRole = () => {
+  if(currentRole === 'business_owner') {
+    currentRole = 'intake_team';
+    document.getElementById('rbacRoleLabel').textContent = 'INTAKE TEAM';
+    document.querySelector('.rbac-link').textContent = 'Switch to Business Owner view';
+    openIntakeDashboard();
+  } else {
+    currentRole = 'business_owner';
+    document.getElementById('rbacRoleLabel').textContent = 'BUSINESS OWNER';
+    document.querySelector('.rbac-link').textContent = 'Switch to Intake Team view';
+    closeIntakeDashboard();
+  }
+};
+
+window.openIntakeDashboard = () => {
+  renderIntakeDashboard();
+  document.getElementById('intakeDashboard').classList.add('open');
+};
+
+window.closeIntakeDashboard = () => {
+  document.getElementById('intakeDashboard').classList.remove('open');
+  currentRole = 'business_owner';
+  document.getElementById('rbacRoleLabel').textContent = 'BUSINESS OWNER';
+  document.querySelector('.rbac-link').textContent = 'Switch to Intake Team view';
+};
+
+// ── SPRINT 3: RENDER INTAKE DASHBOARD ─────────────────────────
+function renderIntakeDashboard() {
+  const total = submissionHistory.length;
+  const totalRedactions = submissionHistory.reduce((s,r)=>s+r.total_redactions,0);
+  const queues = {};
+  submissionHistory.forEach(r=>{ queues[r.assigned_queue]=(queues[r.assigned_queue]||0)+1; });
+  const topQueue = Object.entries(queues).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';
+  const qLabel = {'personal-injury':'Personal Injury','contract-dispute':'Contract','employment':'Employment','property':'Property','consumer-fraud':'Consumer','general-civil':'General'};
+
+  document.getElementById('intakeMetrics').innerHTML = `
+    <div class="intake-card"><div class="intake-card-label">Total submissions</div><div class="intake-card-val">${total}</div></div>
+    <div class="intake-card"><div class="intake-card-label">Total redactions applied</div><div class="intake-card-val">${totalRedactions}</div></div>
+    <div class="intake-card"><div class="intake-card-label">Top matter type</div><div class="intake-card-val" style="font-size:16px">${qLabel[topQueue]||'—'}</div></div>
+    <div class="intake-card"><div class="intake-card-label">Original docs stored</div><div class="intake-card-val" style="color:var(--success)">0</div></div>
+  `;
+
+  const tbody = document.getElementById('intakeTableBody');
+  const empty = document.getElementById('intakeEmpty');
+  if(!total){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  const queueClass = q => 'q-'+q.replace(/[^a-z]/g,'-');
+  tbody.innerHTML = submissionHistory.slice().reverse().map(r=>`
+    <tr>
+      <td><span style="font-family:'DM Mono',monospace;font-weight:600;font-size:11px">${esc(r.confirmation_number)}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.filename)}</td>
+      <td><span class="intake-queue-badge ${queueClass(r.assigned_queue)}">${esc(qLabel[r.assigned_queue]||r.assigned_queue)}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.total_redactions}</td>
+      <td style="font-size:10px;color:var(--ink3)">${new Date(r.submitted_at).toLocaleString()}</td>
+      <td><span class="history-status status-received">Received</span></td>
+      <td style="font-size:10px;color:var(--ink3)">${esc(r.review_eta)}</td>
+    </tr>`).join('');
+}
+
+// ── SPRINT 3: HISTORY PANEL ────────────────────────────────────
+function renderSubmissionHistory() {
+  const list = document.getElementById('historyList');
+  const empty = document.getElementById('historyEmpty');
+  document.getElementById('historyCount').textContent = '(' + submissionHistory.length + ' this session)';
+  if(!submissionHistory.length){ empty.style.display='block'; list.innerHTML=''; return; }
+  empty.style.display='none';
+  const qLabel = {'personal-injury':'Personal Injury','contract-dispute':'Contract Dispute','employment':'Employment','property':'Property','consumer-fraud':'Consumer Fraud','general-civil':'General Civil'};
+  list.innerHTML = submissionHistory.slice().reverse().map(r=>`
+    <div class="history-item" onclick="showHistoryDetail('${r.confirmation_number}')">
+      <div class="history-item-top">
+        <span class="history-confirm">${esc(r.confirmation_number)}</span>
+        <span class="history-status status-received">Received</span>
+      </div>
+      <div class="history-meta">
+        <span>${esc(r.filename)}</span>
+        <span>${r.total_redactions} redactions</span>
+        <span>${esc(qLabel[r.assigned_queue]||r.assigned_queue)}</span>
+        <span>${new Date(r.submitted_at).toLocaleTimeString()}</span>
+      </div>
+    </div>`).join('');
+}
+
+window.showHistoryDetail = confNum => {
+  const r = submissionHistory.find(x=>x.confirmation_number===confNum);
+  if(!r) return;
+  const qLabel = {'personal-injury':'Personal Injury','contract-dispute':'Contract Dispute','employment':'Employment','property':'Property','consumer-fraud':'Consumer Fraud','general-civil':'General Civil'};
+  alert([
+    'Confirmation: ' + r.confirmation_number,
+    'File: ' + r.filename,
+    'Queue: ' + (qLabel[r.assigned_queue]||r.assigned_queue),
+    'Redactions: ' + r.total_redactions,
+    'Est. review: ' + r.review_eta,
+    'Hash (redacted): ' + r.file_hash_redacted,
+    'Original stored: NO'
+  ].join('\n'));
+};
+
+// ── SPRINT 3: ANIMATED SUBMISSION PROGRESS ─────────────────────
+// Patch simulateServerPost to show progress overlay
+const _origSimulate = simulateServerPost;
+simulateServerPost = async function() {
+  const overlay = document.getElementById('submitProgressOverlay');
+  overlay.classList.add('open');
+
+  const steps = ['ss-encrypt','ss-hash','ss-upload','ss-audit','ss-confirm'];
+  const msgs = ['Preparing redacted content…','Generating integrity hash…','Transmitting via TLS…','Writing audit record…','Issuing confirmation number…'];
+
+  // Reset
+  steps.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.querySelector('.submit-step-icon').className = 'submit-step-icon ss-pending';
+  });
+
+  for(let i=0; i<steps.length; i++) {
+    const el = document.getElementById(steps[i]);
+    if(el) {
+      el.classList.add('active');
+      el.querySelector('.submit-step-icon').className = 'submit-step-icon ss-running';
+      el.querySelector('.submit-step-icon').innerHTML = '';
+    }
+    document.getElementById('submitProgressMsg').textContent = msgs[i];
+    await sleep(280 + Math.random()*200);
+    if(el) {
+      el.classList.remove('active');
+      el.querySelector('.submit-step-icon').className = 'submit-step-icon ss-done';
+      el.querySelector('.submit-step-icon').innerHTML = '&#10003;';
+    }
+  }
+
+  await sleep(200);
+  overlay.classList.remove('open');
+  await _origSimulate();
+};
+
+// Patch switchTab to handle history tab
+const _origSwitchTab = window.switchTab;
+window.switchTab = tab => {
+  _origSwitchTab(tab);
+  if(tab === 'history') renderSubmissionHistory();
+};
+
+
+// ── FILE INPUT ────────────────────────────────────────────────
+const dz=document.getElementById('dropZone');
+const fi=document.getElementById('fileInput');
+fi.addEventListener('change', e=>{ if(e.target.files[0]) processFile(e.target.files[0]); });
+dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', ()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e=>{ e.preventDefault(); dz.classList.remove('drag-over'); const f=e.dataTransfer.files[0]; if(f) processFile(f); });
+
+// ── DEMO MODE ─────────────────────────────────────────────────
+if(location.search.includes('demo')){
+  const sample=`SUPREME COURT OF THE STATE OF NEW YORK
+COUNTY OF NASSAU
+Index No. 601234/2026
+
+PATRICIA A. MORRISON,
+                    Plaintiff,
+    -against-
+
+OCEANVIEW RETAIL LLC d/b/a SHORELINE GOODS,
+                    Defendant.
+
+SUMMONS AND COMPLAINT
+
+TO THE DEFENDANT: You are hereby summoned to answer the complaint and serve a copy of your answer on Plaintiff's attorneys within 20 days.
+
+COMPLAINT
+
+Plaintiff Patricia A. Morrison, residing at 412 Magnolia Court, Levittown, NY 11756, by her attorneys Douglas & Hewitt LLP, 88 Willis Avenue, Suite 400, Mineola, NY 11501, complains as follows:
+
+1. On or about March 14, 2026, Plaintiff slipped and fell on Defendant's premises at 2200 Hempstead Turnpike, East Meadow, NY 11554, due to an unmarked wet floor.
+
+2. Defendant's employees, including store manager Robert K. Jenkins (SSN: 123-45-6789) and assistant manager Linda Vasquez, failed to place warning signs.
+
+3. Defendant maintained insurance under Policy No. GL-4892167-2026 issued by Northeastern Casualty Group.
+
+4. Plaintiff's treating physician, Dr. Sarah Chen, M.D., of Nassau Orthopedic Associates, 750 Old Country Road, Plainview, NY 11803, documented injuries totaling $87,500.00 in medical bills.
+
+5. Plaintiff seeks total damages of $350,000.00.
+
+Dated: April 28, 2026
+
+                ____________________________
+                Michael T. Douglas, Esq.
+                Douglas & Hewitt LLP
+                Bar No. 4892167
+                Tel: (516) 555-0193
+                Email: mdouglas@douglashewittlaw.com
+                Attorneys for Plaintiff`;
+
+  // Pre-seed dictionary with matter-specific terms
+  customDict.push({term:'Oceanview Retail LLC', label:'[BUSINESS]'});
+  customDict.push({term:'Shoreline Goods', label:'[BUSINESS]'});
+  customDict.push({term:'Nassau Orthopedic Associates', label:'[BUSINESS]'});
+  customDict.push({term:'Northeastern Casualty Group', label:'[BUSINESS]'});
+  renderDictList();
+
+  const blob=new Blob([sample],{type:'text/plain'});
+  processFile(new File([blob],'Morrison-v-OceanviewRetail-Complaint.txt',{type:'text/plain'}));
+}
+</script>
+
+<!-- PDF.js 3.x UMD — worker-free, Chrome-safe -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- jsPDF for PDF output -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- ── SPRINT 3: RBAC ROLE BAR ── -->
+<div class="rbac-bar" id="rbacBar">
+  <span>Role:</span>
+  <span class="rbac-role" id="rbacRoleLabel">BUSINESS OWNER</span>
+  <span class="rbac-sep">|</span>
+  <span style="font-size:11px;opacity:.7">Intake portal v3.0</span>
+  <span class="rbac-sep">|</span>
+  <span class="rbac-link" onclick="switchRole()">Switch to Intake Team view</span>
+  <span style="margin-left:auto;font-size:10px;opacity:.5" id="rbacSessionId"></span>
+</div>
+
+<!-- ── SPRINT 3: SUBMISSION PROGRESS OVERLAY ── -->
+<div class="submit-progress-overlay" id="submitProgressOverlay">
+  <div class="submit-progress-card">
+    <div class="submit-progress-title">Submitting to intake</div>
+    <div class="submit-progress-sub">Transmitting only your approved redacted version</div>
+    <div class="submit-steps" id="submitSteps">
+      <div class="submit-step" id="ss-encrypt"><div class="submit-step-icon ss-pending">&#8226;</div><span>Preparing redacted content</span></div>
+      <div class="submit-step" id="ss-hash"><div class="submit-step-icon ss-pending">&#8226;</div><span>Generating integrity hash</span></div>
+      <div class="submit-step" id="ss-upload"><div class="submit-step-icon ss-pending">&#8226;</div><span>Transmitting to server (TLS)</span></div>
+      <div class="submit-step" id="ss-audit"><div class="submit-step-icon ss-pending">&#8226;</div><span>Writing audit record</span></div>
+      <div class="submit-step" id="ss-confirm"><div class="submit-step-icon ss-pending">&#8226;</div><span>Generating confirmation number</span></div>
+    </div>
+    <div style="font-size:11px;color:var(--ink3)" id="submitProgressMsg">Starting…</div>
+  </div>
+</div>
+
+<!-- ── SPRINT 3: INTAKE DASHBOARD (RBAC: INTAKE TEAM) ── -->
+<div class="intake-dashboard" id="intakeDashboard">
+  <div class="intake-header">
+    <div style="width:32px;height:32px;background:var(--ink);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:14px;color:#fff">LR</div>
+    <div class="intake-title">Intake Team Dashboard</div>
+    <div style="background:var(--accent-light);color:var(--accent);font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:.4px;text-transform:uppercase">RBAC: intake_team</div>
+    <div style="margin-left:auto;font-size:11px;color:var(--ink3)">Viewing redacted submissions only &mdash; originals never stored</div>
+    <button class="intake-close" onclick="closeIntakeDashboard()">&#215;</button>
+  </div>
+  <div class="intake-body">
+    <div class="intake-grid" id="intakeMetrics"></div>
+    <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px">Submission queue</div>
+    <table class="intake-table">
+      <thead><tr>
+        <th>Confirmation</th>
+        <th>File</th>
+        <th>Queue</th>
+        <th>Redactions</th>
+        <th>Submitted</th>
+        <th>Status</th>
+        <th>ETA</th>
+      </tr></thead>
+      <tbody id="intakeTableBody"></tbody>
+    </table>
+    <div id="intakeEmpty" style="padding:40px;text-align:center;color:var(--ink3);font-size:12px">No submissions yet. Submit a document from the Business Owner view to see it appear here.</div>
+  </div>
+</div>
+
+</body>
+</html>
